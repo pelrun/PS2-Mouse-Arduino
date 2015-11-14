@@ -7,18 +7,21 @@
  */
 
 #include <PS2Mouse.h>
-#define MOUSE_DATA 5
-#define MOUSE_CLOCK 6
+#define MOUSE_DATA 3
+#define MOUSE_CLOCK 2
 
 PS2Mouse mouse(MOUSE_CLOCK, MOUSE_DATA, STREAM);
+
+int x, y, z;
 
 /**
  * Setup
  */
 void setup()
 {
-  Serial.begin(38400);
   mouse.initialize();
+  mouse.enable_scrollwheel();
+  Serial.begin(38400);
 }
 
 /**
@@ -26,12 +29,30 @@ void setup()
  */
 void loop()
 {
-  int data[2];
+  int data[3];
   mouse.report(data);
-  Serial.print(data[0]); // Status Byte
+  x += data[1];
+  y += data[2];
+  z += data[3];
+
+  if (mouse.is_pressed(LEFT))
+  {
+    Serial.print("L");    
+  }
+  if (mouse.is_pressed(MIDDLE))
+  {
+    Serial.print("M");    
+  }
+  if (mouse.is_pressed(RIGHT))
+  {
+    Serial.print("R");    
+  }
+  
   Serial.print(":");
-  Serial.print(data[1]); // X Movement Data
+  Serial.print(x); // X Movement Data
   Serial.print(",");
-  Serial.print(data[2]); // Y Movement Data
+  Serial.print(y); // Y Movement Data
+  Serial.print(",");
+  Serial.print(z); // Z Movement Data
   Serial.println();
 }

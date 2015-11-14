@@ -1,6 +1,6 @@
-#include "WConstants.h"
-#include "HardwareSerial.h"
+#include "Arduino.h"
 #include "PS2Mouse.h"
+
 
 PS2Mouse::PS2Mouse(int clock_pin, int data_pin, int mode) {
   _clock_pin = clock_pin;
@@ -9,6 +9,8 @@ PS2Mouse::PS2Mouse(int clock_pin, int data_pin, int mode) {
   _initialized = false;  
   _disabled = true;
   _enabled = false;
+  _scrollwheel = false;
+  _status = 0;
 }
 
 int PS2Mouse::clock_pin() {
@@ -60,6 +62,31 @@ void PS2Mouse::set_remote_mode() {
 void PS2Mouse::set_stream_mode() {
   set_mode(0xea);
   _mode = STREAM;
+}
+
+void PS2Mouse::enable_scrollwheel() {
+  if (_mode == STREAM) {
+    disable_data_reporting(); // Tell the mouse to stop sending data.
+  }
+  write(0xf3); // Tell the mouse we are going to set the sample rate.
+  read_byte(); // Read Ack Byte
+  write(200); // Send Set Sample Rate
+  read_byte(); // Read ack byte
+  write(0xf3); // Tell the mouse we are going to set the sample rate.
+  read_byte(); // Read Ack Byte
+  write(100); // Send Set Sample Rate
+  read_byte(); // Read ack byte
+  write(0xf3); // Tell the mouse we are going to set the sample rate.
+  read_byte(); // Read Ack Byte
+  write(80); // Send Set Sample Rate
+  read_byte(); // Read ack byte
+  write(0xf2); // Read device id
+  read_byte(); // Read ack byte
+  read_byte(); // Read mouse id
+  _scrollwheel = true;
+  if (_mode == STREAM) {
+    enable_data_reporting(); // Tell the mouse to start sending data again
+  }
 }
 
 void PS2Mouse::set_sample_rate(int rate) {
@@ -159,9 +186,13 @@ void PS2Mouse::write(int data) {
 int * PS2Mouse::report(int data[]) {
   write(0xeb); // Send Read Data
   read_byte(); // Read Ack Byte
-  data[0] = read(); // Status bit
+  data[0] = _status = read(); // Status bit
   data[1] = read_movement_x(data[0]); // X Movement Packet
   data[2] = read_movement_y(data[0]); // Y Movement Packet
+  if (_scrollwheel)
+  {
+    data[3] = (char)read(); // Z Movement Packet
+  }
   return data;
 }
 
@@ -221,4 +252,8 @@ void PS2Mouse::pull_low(int pin) {
 void PS2Mouse::pull_high(int pin) {
   pinMode(pin, INPUT);
   digitalWrite(pin, HIGH);
+}
+
+bool PS2Mouse::is_pressed(enum Button button) {
+  return (_status>>(int)button)&1;
 }

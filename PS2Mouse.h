@@ -4,6 +4,13 @@
 #define REMOTE 1
 #define STREAM 2
 
+enum Button
+{
+  LEFT = 0,
+  RIGHT = 1,
+  MIDDLE = 2,
+};
+
 class PS2Mouse
 {
   private:
@@ -13,6 +20,8 @@ class PS2Mouse
     int _initialized;
     int _enabled;
     int _disabled;
+    int _scrollwheel;
+    int _status;
     int read_byte();
     int read_bit();
     int read_movement_x(int);
@@ -30,12 +39,14 @@ class PS2Mouse
     void write(int);
     void enable_data_reporting();
     void disable_data_reporting();
+    void enable_scrollwheel();
     void set_remote_mode();
     void set_stream_mode();
     void set_resolution(int);
     void set_scaling_2_1();
     void set_scaling_1_1();
     void set_sample_rate(int);
+    bool is_pressed(Button button);
 };
 
 #endif
